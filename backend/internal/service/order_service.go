@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"gorm.io/gorm"
-
 	"mall/internal/model"
 	"mall/internal/repository"
 	"mall/pkg/utils"
@@ -154,8 +152,8 @@ func NewOrderService(
 
 // CreateOrder 创建订单
 func (s *orderService) CreateOrder(userID uint64, req *CreateOrderRequest) (*CreateOrderResponse, error) {
-	// 验证用户
-	user, err := s.userRepo.GetByID(userID)
+	// 验证用户是否存在
+	_, err := s.userRepo.GetByID(userID)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}

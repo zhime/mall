@@ -16,6 +16,7 @@ type ProductService interface {
 	GetProduct(id uint64) (*ProductResponse, error)
 	GetProductDetail(id uint64) (*ProductDetailResponse, error)
 	GetProductList(req *ProductListRequest) (*ProductListResponse, error)
+	GetProductsByCategory(categoryID uint64, req *ProductListRequest) (*ProductListResponse, error)
 	SearchProducts(req *SearchProductRequest) (*ProductListResponse, error)
 	GetHotProducts(limit int) ([]*ProductResponse, error)
 	UpdateProductStock(id uint64, stock int) error
@@ -379,6 +380,32 @@ func (s *productService) GetHotProducts(limit int) ([]*ProductResponse, error) {
 // UpdateProductStock 更新商品库存
 func (s *productService) UpdateProductStock(id uint64, stock int) error {
 	return s.productRepo.UpdateStock(id, stock)
+}
+
+// GetProductsByCategory 按分类获取商品
+func (s *productService) GetProductsByCategory(categoryID uint64, req *ProductListRequest) (*ProductListResponse, error) {
+	products, total, err := s.productRepo.GetByCategoryID(categoryID, req.Page, req.PageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	var productResponses []*ProductResponse
+	for _, product := range products {
+		productResponses = append(productResponses, s.toProductResponse(product))
+	}
+
+	totalPages := int(total) / req.PageSize
+	if int(total)%req.PageSize > 0 {
+		totalPages++
+	}
+
+	return &ProductListResponse{
+		Items:      productResponses,
+		Total:      total,
+		Page:       req.Page,
+		PageSize:   req.PageSize,
+		TotalPages: totalPages,
+	}, nil
 }
 
 // toProductResponse 转换为商品响应

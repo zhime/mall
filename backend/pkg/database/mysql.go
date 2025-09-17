@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -36,13 +37,13 @@ func InitDB() {
 	var err error
 	DB, err = gorm.Open(mysql.Open(dsn), gormConfig)
 	if err != nil {
-		appLogger.Fatal("Failed to connect to database", appLogger.Error(err.Error()))
+		appLogger.Fatal("Failed to connect to database", zap.Error(err))
 	}
 
 	// 获取底层sql.DB
 	sqlDB, err := DB.DB()
 	if err != nil {
-		appLogger.Fatal("Failed to get sql.DB", appLogger.Error(err.Error()))
+		appLogger.Fatal("Failed to get sql.DB", zap.Error(err))
 	}
 
 	// 设置连接池
@@ -63,7 +64,7 @@ func CloseDB() {
 	if DB != nil {
 		sqlDB, err := DB.DB()
 		if err != nil {
-			appLogger.Error("Failed to get sql.DB for closing", appLogger.Error(err.Error()))
+			appLogger.Error("Failed to get sql.DB for closing", zap.Error(err))
 			return
 		}
 		sqlDB.Close()

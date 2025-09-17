@@ -2,11 +2,9 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
-	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -35,6 +33,11 @@ type AuthService interface {
 	RefreshToken(token string) (*TokenResponse, error)
 	Logout(userID uint64) error
 	GetUserInfo(userID uint64) (*UserInfoResponse, error)
+	
+	// 用户资料相关
+	UpdateProfile(userID uint64, req *UpdateProfileRequest) error
+	ChangePassword(userID uint64, req *ChangePasswordRequest) error
+	BindPhone(userID uint64, req *BindPhoneRequest) error
 }
 
 // LoginResponse 登录响应
@@ -56,6 +59,26 @@ type RegisterRequest struct {
 	Password string `json:"password" binding:"required,min=6"`
 	Phone    string `json:"phone" binding:"required"`
 	Code     string `json:"code" binding:"required"`
+}
+
+// UpdateProfileRequest 更新用户资料请求
+type UpdateProfileRequest struct {
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
+	Gender   int8   `json:"gender"`
+	Birthday string `json:"birthday"`
+}
+
+// ChangePasswordRequest 修改密码请求
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}
+
+// BindPhoneRequest 绑定手机号请求
+type BindPhoneRequest struct {
+	Phone string `json:"phone" binding:"required"`
+	Code  string `json:"code" binding:"required"`
 }
 
 // UserInfoResponse 用户信息响应
@@ -370,4 +393,101 @@ func (s *authService) GetUserInfo(userID uint64) (*UserInfoResponse, error) {
 	}
 
 	return userInfo, nil
+}
+
+// UpdateProfile 更新用户资料
+func (s *authService) UpdateProfile(userID uint64, req *UpdateProfileRequest) error {
+	user, err := s.userRepo.GetUserWithProfile(userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	// 更新用户基础信息
+	if req.Nickname != "" {
+		user.Profile.Nickname = req.Nickname
+	}
+	if req.Avatar != "" {
+		user.Profile.Avatar = req.Avatar
+	}
+	if req.Gender != 0 {
+		user.Profile.Gender = req.Gender
+	}
+	if req.Birthday != "" {
+		// 解析生日字符串为time.Time
+		birthday, err := time.Parse("2006-01-02", req.Birthday)
+		if err == nil {
+			user.Profile.Birthday = birthday
+		}
+	}
+
+	return s.userRepo.Update(user)
+}
+
+// ChangePassword 修改密码
+func (s *authService) ChangePassword(userID uint64, req *ChangePasswordRequest) error {
+	// 验证旧密码
+	userAuth, err := s.userAuthRepo.GetByUserIDAndType(userID, "password")
+	if err != nil {
+		return errors.New("password not set")
+	}
+
+	if !utils.CheckPassword(req.OldPassword, userAuth.PasswordHash) {
+		return errors.New("old password incorrect")
+	}
+
+	// 生成新密码哈希
+	newPasswordHash, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		return errors.New("failed to hash new password")
+	}
+
+	userAuth.PasswordHash = newPasswordHash
+
+	return s.userAuthRepo.Update(userAuth)
+}
+
+// BindPhone 绑定手机号
+func (s *authService) BindPhone(userID uint64, req *BindPhoneRequest) error {
+	// 验证验证码
+	if !s.VerifySMSCode(req.Phone, req.Code) {
+		return errors.New("invalid verification code")
+	}
+
+	// 检查手机号是否已被其他用户绑定
+	if _, err := s.userRepo.GetByPhone(req.Phone); err == nil {
+		return errors.New("phone number already bound to another account")
+	}
+
+	// 获取用户
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	// 更新手机号
+	user.Phone = req.Phone
+
+	// 更新认证信息
+	if err := s.userRepo.Update(user); err != nil {
+		return errors.New("failed to update user phone")
+	}
+
+	// 更新认证信息中的手机号
+	userAuth, err := s.userAuthRepo.GetByUserIDAndType(userID, "phone")
+	if err != nil {
+		// 如果没有手机号认证记录，创建一个新的
+		userAuth = &model.UserAuth{
+			UserID:   userID,
+			AuthType: "phone",
+			AuthKey:  req.Phone,
+		}
+	} else {
+		userAuth.AuthKey = req.Phone
+	}
+
+	if userAuth.ID == 0 {
+		return s.userAuthRepo.Create(userAuth)
+	} else {
+		return s.userAuthRepo.Update(userAuth)
+	}
 }

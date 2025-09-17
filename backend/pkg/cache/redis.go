@@ -6,12 +6,45 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 
 	"mall/pkg/config"
 	"mall/pkg/logger"
 )
 
 var RDB *redis.Client
+
+// cacheService Redis缓存服务实现
+type cacheService struct {
+	rdb *redis.Client
+}
+
+// NewCacheService 创建缓存服务
+func NewCacheService() CacheService {
+	return &cacheService{
+		rdb: RDB,
+	}
+}
+
+// Set 实现CacheService接口
+func (c *cacheService) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
+	return c.rdb.Set(ctx, key, value, expiration).Err()
+}
+
+// Get 实现CacheService接口
+func (c *cacheService) Get(ctx context.Context, key string) (string, error) {
+	return c.rdb.Get(ctx, key).Result()
+}
+
+// Delete 实现CacheService接口
+func (c *cacheService) Delete(ctx context.Context, key string) error {
+	return c.rdb.Del(ctx, key).Err()
+}
+
+// Exists 实现CacheService接口
+func (c *cacheService) Exists(ctx context.Context, key string) (int64, error) {
+	return c.rdb.Exists(ctx, key).Result()
+}
 
 // InitRedis 初始化Redis连接
 func InitRedis() {
@@ -28,7 +61,7 @@ func InitRedis() {
 	ctx := context.Background()
 	_, err := RDB.Ping(ctx).Result()
 	if err != nil {
-		logger.Fatal("Failed to connect to Redis", logger.Error(err.Error()))
+		logger.Fatal("Failed to connect to Redis", zap.Error(err))
 	}
 
 	logger.Info("Redis connected successfully")

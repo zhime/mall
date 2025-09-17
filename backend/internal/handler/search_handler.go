@@ -9,10 +9,10 @@ import (
 )
 
 type SearchHandler struct {
-	searchService *service.SearchService
+	searchService service.SearchService
 }
 
-func NewSearchHandler(searchService *service.SearchService) *SearchHandler {
+func NewSearchHandler(searchService service.SearchService) *SearchHandler {
 	return &SearchHandler{
 		searchService: searchService,
 	}

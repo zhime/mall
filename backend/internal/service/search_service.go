@@ -5,16 +5,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"mall/internal/model"
 	"strings"
+
+	"mall/internal/model"
+	"mall/internal/repository"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
 
-type SearchService struct {
+// SearchService 搜索服务接口
+type SearchService interface {
+	SearchProducts(ctx context.Context, req *SearchRequest) (*SearchResponse, error)
+	GetSearchSuggestions(ctx context.Context, keyword string, limit int) ([]string, error)
+	IndexProduct(product *model.Product) error
+	DeleteProduct(productID int) error
+	InitIndex() error
+	BulkIndexProducts() error
+}
+
+// searchService 搜索服务实现
+type searchService struct {
 	es               *elasticsearch.Client
-	productRepo      *ProductRepository
+	productRepo      repository.ProductRepository
 	productIndexName string
 }
 
@@ -36,21 +49,20 @@ type SearchResponse struct {
 }
 
 type ProductDocument struct {
-	ID          int      `json:"id"`
+	ID          uint64   `json:"id"`
 	Name        string   `json:"name"`
-	CategoryID  int      `json:"category_id"`
+	CategoryID  uint64   `json:"category_id"`
 	Price       float64  `json:"price"`
 	Sales       int      `json:"sales"`
 	Images      []string `json:"images"`
 	Description string   `json:"description"`
-	Status      int      `json:"status"`
-	IsFeatured  bool     `json:"is_featured"`
-	IsNew       bool     `json:"is_new"`
+	Status      int8     `json:"status"`
 	CreatedAt   string   `json:"created_at"`
 }
 
-func NewSearchService(es *elasticsearch.Client, productRepo *ProductRepository) *SearchService {
-	return &SearchService{
+// NewSearchService 创建搜索服务
+func NewSearchService(es *elasticsearch.Client, productRepo repository.ProductRepository) SearchService {
+	return &searchService{
 		es:               es,
 		productRepo:      productRepo,
 		productIndexName: "products",
@@ -58,7 +70,7 @@ func NewSearchService(es *elasticsearch.Client, productRepo *ProductRepository) 
 }
 
 // 初始化搜索索引
-func (s *SearchService) InitIndex() error {
+func (s *searchService) InitIndex() error {
 	// 创建索引映射
 	mapping := `{
 		"mappings": {
@@ -108,18 +120,22 @@ func (s *SearchService) InitIndex() error {
 }
 
 // 索引商品数据
-func (s *SearchService) IndexProduct(product *model.Product) error {
+func (s *searchService) IndexProduct(product *model.Product) error {
+	// 处理图片URL数组
+	images := make([]string, len(product.Images))
+	for i, img := range product.Images {
+		images[i] = img.ImageURL
+	}
+	
 	doc := ProductDocument{
 		ID:          product.ID,
 		Name:        product.Name,
 		CategoryID:  product.CategoryID,
 		Price:       product.Price,
 		Sales:       product.Sales,
-		Images:      product.Images,
+		Images:      images,
 		Description: product.Description,
 		Status:      product.Status,
-		IsFeatured:  product.IsFeatured,
-		IsNew:       product.IsNew,
 		CreatedAt:   product.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 
@@ -149,7 +165,7 @@ func (s *SearchService) IndexProduct(product *model.Product) error {
 }
 
 // 删除商品索引
-func (s *SearchService) DeleteProduct(productID int) error {
+func (s *searchService) DeleteProduct(productID int) error {
 	req := esapi.DeleteRequest{
 		Index:      s.productIndexName,
 		DocumentID: fmt.Sprintf("%d", productID),
@@ -165,7 +181,7 @@ func (s *SearchService) DeleteProduct(productID int) error {
 }
 
 // 搜索商品
-func (s *SearchService) SearchProducts(ctx context.Context, req *SearchRequest) (*SearchResponse, error) {
+func (s *searchService) SearchProducts(ctx context.Context, req *SearchRequest) (*SearchResponse, error) {
 	query := s.buildSearchQuery(req)
 	
 	searchBody := map[string]interface{}{
@@ -199,7 +215,7 @@ func (s *SearchService) SearchProducts(ctx context.Context, req *SearchRequest) 
 }
 
 // 构建搜索查询
-func (s *SearchService) buildSearchQuery(req *SearchRequest) map[string]interface{} {
+func (s *searchService) buildSearchQuery(req *SearchRequest) map[string]interface{} {
 	boolQuery := map[string]interface{}{
 		"must": []map[string]interface{}{
 			{"term": map[string]interface{}{"status": 1}}, // 只搜索上架商品
@@ -245,7 +261,7 @@ func (s *SearchService) buildSearchQuery(req *SearchRequest) map[string]interfac
 }
 
 // 构建排序查询
-func (s *SearchService) buildSortQuery(sort string) []map[string]interface{} {
+func (s *searchService) buildSortQuery(sort string) []map[string]interface{} {
 	switch sort {
 	case "sales":
 		return []map[string]interface{}{
@@ -272,7 +288,7 @@ func (s *SearchService) buildSortQuery(sort string) []map[string]interface{} {
 }
 
 // 解析搜索结果
-func (s *SearchService) parseSearchResponse(res *esapi.Response, req *SearchRequest) (*SearchResponse, error) {
+func (s *searchService) parseSearchResponse(res *esapi.Response, req *SearchRequest) (*SearchResponse, error) {
 	var result map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		return nil, err
@@ -302,7 +318,7 @@ func (s *SearchService) parseSearchResponse(res *esapi.Response, req *SearchRequ
 }
 
 // 获取搜索建议
-func (s *SearchService) GetSearchSuggestions(ctx context.Context, keyword string, limit int) ([]string, error) {
+func (s *searchService) GetSearchSuggestions(ctx context.Context, keyword string, limit int) ([]string, error) {
 	if keyword == "" {
 		return []string{}, nil
 	}
@@ -354,7 +370,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, keyword string
 }
 
 // 批量索引商品
-func (s *SearchService) BulkIndexProducts() error {
+func (s *searchService) BulkIndexProducts() error {
 	products, err := s.productRepo.GetAllProducts()
 	if err != nil {
 		return err
@@ -362,17 +378,21 @@ func (s *SearchService) BulkIndexProducts() error {
 
 	var buf bytes.Buffer
 	for _, product := range products {
+		// 处理图片URL数组
+		images := make([]string, len(product.Images))
+		for i, img := range product.Images {
+			images[i] = img.ImageURL
+		}
+		
 		doc := ProductDocument{
 			ID:          product.ID,
 			Name:        product.Name,
 			CategoryID:  product.CategoryID,
 			Price:       product.Price,
 			Sales:       product.Sales,
-			Images:      product.Images,
+			Images:      images,
 			Description: product.Description,
 			Status:      product.Status,
-			IsFeatured:  product.IsFeatured,
-			IsNew:       product.IsNew,
 			CreatedAt:   product.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		}
 

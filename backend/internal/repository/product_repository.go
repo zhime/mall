@@ -19,6 +19,9 @@ type ProductRepository interface {
 	GetHotProducts(limit int) ([]*model.Product, error)
 	UpdateStock(id uint64, stock int) error
 	UpdateSales(id uint64, sales int) error
+	// 为SearchService添加的方法
+	GetProductsByIDs(ids []int) ([]model.Product, error)
+	GetAllProducts() ([]model.Product, error)
 }
 
 // productRepository 商品仓储实现
@@ -157,4 +160,28 @@ func (r *productRepository) UpdateStock(id uint64, stock int) error {
 // UpdateSales 更新商品销量
 func (r *productRepository) UpdateSales(id uint64, sales int) error {
 	return r.db.Model(&model.Product{}).Where("id = ?", id).Update("sales", sales).Error
+}
+
+// GetProductsByIDs 根据ID列表获取商品
+func (r *productRepository) GetProductsByIDs(ids []int) ([]model.Product, error) {
+	var products []model.Product
+	err := r.db.Preload("Category").
+		Preload("Images", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_main = ?", 1)
+		}).
+		Where("id IN ?", ids).
+		Find(&products).Error
+	return products, err
+}
+
+// GetAllProducts 获取所有商品
+func (r *productRepository) GetAllProducts() ([]model.Product, error) {
+	var products []model.Product
+	err := r.db.Preload("Category").
+		Preload("Images", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_main = ?", 1)
+		}).
+		Where("status = ?", 1).
+		Find(&products).Error
+	return products, err
 }

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
+
 	"mall/pkg/cache"
 	"mall/pkg/logger"
 )
@@ -263,7 +265,7 @@ func (s *cacheService) Exists(keys ...string) (int64, error) {
 func (s *cacheService) setJSON(key string, value interface{}, expiration time.Duration) error {
 	jsonData, err := json.Marshal(value)
 	if err != nil {
-		logger.Error("Failed to marshal JSON for cache", logger.String("key", key), logger.Error(err.Error()))
+		logger.Error("Failed to marshal JSON for cache", zap.String("key", key), zap.Error(err))
 		return err
 	}
 	

@@ -7,12 +7,21 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
 	"mall/pkg/logger"
 )
 
+// CacheService 缓存服务接口
+type CacheService interface {
+	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
+	Get(ctx context.Context, key string) (string, error)
+	Delete(ctx context.Context, key string) error
+	Exists(ctx context.Context, key string) (int64, error)
+}
+
 // CacheManager 缓存管理器
 type CacheManager struct {
-	cacheService *CacheService
+	cacheService CacheService
 }
 
 // CachePolicy 缓存策略
@@ -81,7 +90,9 @@ const (
 
 // NewCacheManager 创建缓存管理器
 func NewCacheManager() *CacheManager {
-	return &CacheManager{}
+	return &CacheManager{
+		cacheService: NewCacheService(),
+	}
 }
 
 // CacheWithPolicy 根据策略设置缓存
@@ -94,9 +105,9 @@ func (cm *CacheManager) CacheWithPolicy(key string, value interface{}, policy Ca
 	
 	if int64(len(jsonData)) > policy.MaxSize {
 		logger.Warn("Data size exceeds cache policy limit", 
-			logger.String("key", key),
-			logger.Int("data_size", len(jsonData)),
-			logger.Int64("max_size", policy.MaxSize))
+			zap.String("key", key),
+			zap.Int("data_size", len(jsonData)),
+			zap.Int64("max_size", policy.MaxSize))
 		return fmt.Errorf("data size exceeds cache policy limit")
 	}
 	
@@ -149,7 +160,7 @@ func (cm *CacheManager) InvalidateProductCache(productID uint64) error {
 	
 	// 清除商品列表缓存
 	if err := cm.InvalidateCache("product:list:*"); err != nil {
-		logger.Error("Failed to invalidate product list cache", logger.Error(err.Error()))
+		logger.Error("Failed to invalidate product list cache", zap.Error(err))
 	}
 	
 	ctx := context.Background()
@@ -174,17 +185,17 @@ func (cm *CacheManager) WarmupCache() error {
 	
 	// 预热分类数据
 	if err := cm.warmupCategoryCache(); err != nil {
-		logger.Error("Failed to warmup category cache", logger.Error(err.Error()))
+		logger.Error("Failed to warmup category cache", zap.Error(err))
 	}
 	
 	// 预热热门商品
 	if err := cm.warmupHotProductsCache(); err != nil {
-		logger.Error("Failed to warmup hot products cache", logger.Error(err.Error()))
+		logger.Error("Failed to warmup hot products cache", zap.Error(err))
 	}
 	
 	// 预热系统配置
 	if err := cm.warmupSystemConfigCache(); err != nil {
-		logger.Error("Failed to warmup system config cache", logger.Error(err.Error()))
+		logger.Error("Failed to warmup system config cache", zap.Error(err))
 	}
 	
 	logger.Info("Cache warmup completed")
@@ -239,7 +250,7 @@ func (cm *CacheManager) warmupSystemConfigCache() error {
 func (cm *CacheManager) getKeysByPattern(pattern string) ([]string, error) {
 	// Redis的KEYS命令，生产环境建议使用SCAN
 	ctx := context.Background()
-	rdb := cache.GetRedis()
+	rdb := GetRedis()
 	
 	keys, err := rdb.Keys(ctx, pattern).Result()
 	if err != nil {
@@ -260,7 +271,7 @@ type CacheStats struct {
 // GetCacheStats 获取缓存统计信息
 func (cm *CacheManager) GetCacheStats() (*CacheStats, error) {
 	ctx := context.Background()
-	rdb := cache.GetRedis()
+	rdb := GetRedis()
 	
 	// 获取Redis info
 	info, err := rdb.Info(ctx, "stats", "memory").Result()
@@ -301,8 +312,8 @@ func (cm *CacheManager) CleanupExpiredCache() error {
 	}
 	
 	logger.Info("Cache cleanup completed", 
-		logger.Int64("total_keys", stats.TotalKeys),
-		logger.Float64("hit_rate", stats.HitRate))
+		zap.Int64("total_keys", stats.TotalKeys),
+		zap.Float64("hit_rate", stats.HitRate))
 		
 	return nil
 }
@@ -313,7 +324,7 @@ func (cm *CacheManager) SetCacheTag(key, tag string, expiration time.Duration) e
 	ctx := context.Background()
 	
 	// 将key添加到标签集合中
-	return cache.SAdd(ctx, tagKey, key)
+	return SAdd(ctx, tagKey, key)
 }
 
 // InvalidateCacheByTag 根据标签使缓存失效
@@ -322,19 +333,19 @@ func (cm *CacheManager) InvalidateCacheByTag(tag string) error {
 	ctx := context.Background()
 	
 	// 获取标签下的所有key
-	keys, err := cache.SMembers(ctx, tagKey)
+	keys, err := SMembers(ctx, tagKey)
 	if err != nil {
 		return err
 	}
 	
 	if len(keys) > 0 {
 		// 删除所有相关的缓存
-		if err := cache.Del(ctx, keys...); err != nil {
+		if err := Del(ctx, keys...); err != nil {
 			return err
 		}
 		
 		// 删除标签集合
-		return cache.Del(ctx, tagKey)
+		return Del(ctx, tagKey)
 	}
 	
 	return nil

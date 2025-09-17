@@ -201,8 +201,8 @@ func (s *categoryService) toCategoryResponseWithChildren(category *model.Categor
 	response := s.toCategoryResponse(category)
 	
 	if len(category.Children) > 0 {
-		for _, child := range category.Children {
-			response.Children = append(response.Children, s.toCategoryResponseWithChildren(child))
+		for i := range category.Children {
+			response.Children = append(response.Children, s.toCategoryResponseWithChildren(&category.Children[i]))
 		}
 	}
 

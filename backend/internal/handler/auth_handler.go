@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 
 	"mall/internal/service"
@@ -199,18 +197,17 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Nickname string `json:"nickname"`
-		Avatar   string `json:"avatar"`
-		Gender   int8   `json:"gender"`
-	}
-
+	var req service.UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.InvalidParams(c, err.Error())
 		return
 	}
 
-	// TODO: 实现更新用户信息逻辑
+	if err := h.authService.UpdateProfile(uint64(userID), &req); err != nil {
+		utils.Error(c, utils.ERROR, err.Error())
+		return
+	}
+
 	utils.SuccessWithMessage(c, "Profile updated successfully", nil)
 }
 
@@ -222,17 +219,17 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		OldPassword string `json:"old_password" binding:"required"`
-		NewPassword string `json:"new_password" binding:"required,min=6"`
-	}
-
+	var req service.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.InvalidParams(c, err.Error())
 		return
 	}
 
-	// TODO: 实现修改密码逻辑
+	if err := h.authService.ChangePassword(uint64(userID), &req); err != nil {
+		utils.Error(c, utils.ERROR, err.Error())
+		return
+	}
+
 	utils.SuccessWithMessage(c, "Password changed successfully", nil)
 }
 
@@ -244,16 +241,16 @@ func (h *AuthHandler) BindPhone(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Phone string `json:"phone" binding:"required"`
-		Code  string `json:"code" binding:"required"`
-	}
-
+	var req service.BindPhoneRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.InvalidParams(c, err.Error())
 		return
 	}
 
-	// TODO: 实现绑定手机号逻辑
+	if err := h.authService.BindPhone(uint64(userID), &req); err != nil {
+		utils.Error(c, utils.ERROR, err.Error())
+		return
+	}
+
 	utils.SuccessWithMessage(c, "Phone number bound successfully", nil)
 }
