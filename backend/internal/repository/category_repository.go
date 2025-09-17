@@ -57,11 +57,11 @@ func (r *categoryRepository) Delete(id uint64) error {
 func (r *categoryRepository) List(parentID uint64) ([]*model.Category, error) {
 	var categories []*model.Category
 	query := r.db.Where("status = ?", 1).Order("sort_order ASC, id ASC")
-	
+
 	if parentID > 0 {
 		query = query.Where("parent_id = ?", parentID)
 	}
-	
+
 	err := query.Find(&categories).Error
 	return categories, err
 }
@@ -72,7 +72,7 @@ func (r *categoryRepository) GetTree() ([]*model.Category, error) {
 	err := r.db.Where("status = ?", 1).
 		Order("level ASC, sort_order ASC, id ASC").
 		Find(&categories).Error
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (r *categoryRepository) GetTree() ([]*model.Category, error) {
 			rootCategories = append(rootCategories, category)
 		} else {
 			if parent, exists := categoryMap[category.ParentID]; exists {
-				parent.Children = append(parent.Children, category)
+				parent.Children = append(parent.Children, *category)
 			}
 		}
 	}

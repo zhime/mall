@@ -6,9 +6,9 @@ import (
 
 func main() {
 	// 创建应用实例
-	app := app.New()
-	defer app.Close()
+	service := app.New()
+	defer service.Close()
 
 	// 启动应用
-	app.Run()
+	_ = service.Run()
 }
