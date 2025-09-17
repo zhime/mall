@@ -1,0 +1,60 @@
+# 生产环境配置
+server:
+  host: "0.0.0.0"
+  port: 8080
+  mode: "release"
+
+database:
+  host: "${DB_HOST}"
+  port: 3306
+  username: "${DB_USER}"
+  password: "${DB_PASS}"
+  dbname: "${DB_NAME}"
+  charset: "utf8mb4"
+  timezone: "Asia/Shanghai"
+  max_idle_conns: 20
+  max_open_conns: 200
+  conn_max_lifetime: 3600
+
+redis:
+  host: "${REDIS_HOST}"
+  port: 6379
+  password: "${REDIS_PASS}"
+  db: 0
+  pool_size: 20
+
+elasticsearch:
+  host: "${ES_HOST}"
+  port: 9200
+  username: "${ES_USER}"
+  password: "${ES_PASS}"
+
+jwt:
+  secret: "${JWT_SECRET}"
+  expire_hours: 168
+
+log:
+  level: "info"
+  filename: "logs/app.log"
+  max_size: 100
+  max_age: 30
+  max_backups: 10
+
+upload:
+  path: "uploads/"
+  max_size: 10
+  allowed_types:
+    - "image/jpeg"
+    - "image/png"
+    - "image/gif"
+
+wechat:
+  app_id: "${WECHAT_APP_ID}"
+  app_secret: "${WECHAT_APP_SECRET}"
+  mch_id: "${WECHAT_MCH_ID}"
+  api_key: "${WECHAT_API_KEY}"
+
+alipay:
+  app_id: "${ALIPAY_APP_ID}"
+  private_key: "${ALIPAY_PRIVATE_KEY}"
+  alipay_public_key: "${ALIPAY_PUBLIC_KEY}"

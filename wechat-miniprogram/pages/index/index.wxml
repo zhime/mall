@@ -1,0 +1,66 @@
+<!--pages/index/index.wxml-->
+<view class="index-page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input" bindtap="goToSearch">
+      <text class="search-placeholder">搜索商品</text>
+      <image class="search-icon" src="/images/search.png"></image>
+    </view>
+  </view>
+
+  <!-- 轮播图 -->
+  <swiper class="banner-swiper" autoplay="{{true}}" interval="3000" duration="500" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#fff">
+    <swiper-item wx:for="{{banners}}" wx:key="id" bindtap="onBannerTap" data-item="{{item}}">
+      <image src="{{item.image}}" mode="aspectFill"></image>
+    </swiper-item>
+  </swiper>
+
+  <!-- 分类导航 -->
+  <view class="category-nav">
+    <view class="nav-item" wx:for="{{categories}}" wx:key="id" bindtap="onCategoryTap" data-id="{{item.id}}">
+      <image src="{{item.icon}}" class="nav-icon"></image>
+      <text class="nav-text">{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 营销活动 -->
+  <view class="marketing-section">
+    <view class="notice-bar">
+      <image src="/images/notice.png" class="notice-icon"></image>
+      <text class="notice-text">限时秒杀活动正在进行中，快来抢购吧！</text>
+    </view>
+  </view>
+
+  <!-- 商品推荐 -->
+  <view class="recommend-section">
+    <view class="section-header">
+      <text class="section-title">为你推荐</text>
+    </view>
+    
+    <view class="product-grid">
+      <view class="product-item" wx:for="{{products}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+        <view class="product-image">
+          <image src="{{item.images[0]}}" mode="aspectFill"></image>
+          <view wx:if="{{item.is_new}}" class="product-tag tag-new">新品</view>
+          <view wx:if="{{item.is_featured}}" class="product-tag tag-hot">热销</view>
+        </view>
+        <view class="product-info">
+          <text class="product-name">{{item.name}}</text>
+          <view class="product-price-row">
+            <text class="product-price">{{item.price}}</text>
+            <text wx:if="{{item.original_price > item.price}}" class="original-price">{{item.original_price}}</text>
+          </view>
+          <text class="product-sales">已售{{item.sales}}件</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view wx:if="{{loading}}" class="loading">
+      <text>加载中...</text>
+    </view>
+    <view wx:if="{{!hasMore && products.length > 0}}" class="loading">
+      <text>没有更多了</text>
+    </view>
+  </view>
+</view>

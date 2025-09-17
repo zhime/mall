@@ -1,0 +1,171 @@
+// 全局样式
+
+// Element Plus 主题色定制
+:root {
+  --el-color-primary: #409eff;
+  --el-color-primary-light-3: #79bbff;
+  --el-color-primary-light-5: #a0cfff;
+  --el-color-primary-light-7: #c6e2ff;
+  --el-color-primary-light-8: #d9ecff;
+  --el-color-primary-light-9: #ecf5ff;
+  --el-color-primary-dark-2: #337ecc;
+}
+
+// 重置样式
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  height: 100%;
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+// 通用类
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mb-10 {
+  margin-bottom: 10px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.mt-10 {
+  margin-top: 10px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+// 表格样式增强
+.el-table {
+  .el-table__header {
+    th {
+      background-color: #fafafa;
+      color: #606266;
+      font-weight: 500;
+    }
+  }
+}
+
+// 表单样式增强
+.form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  
+  .form-title {
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #303133;
+  }
+}
+
+// 卡片样式增强
+.el-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  
+  .el-card__header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #ebeef5;
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      .title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #303133;
+      }
+    }
+  }
+  
+  .el-card__body {
+    padding: 20px;
+  }
+}
+
+// 按钮组样式
+.button-group {
+  display: flex;
+  gap: 10px;
+  
+  &.right {
+    justify-content: flex-end;
+  }
+  
+  &.center {
+    justify-content: center;
+  }
+}
+
+// 状态标签样式
+.status-tag {
+  &.success {
+    color: #67c23a;
+    background-color: #f0f9ff;
+    border-color: #e1f3d8;
+  }
+  
+  &.warning {
+    color: #e6a23c;
+    background-color: #fdf6ec;
+    border-color: #faecd8;
+  }
+  
+  &.danger {
+    color: #f56c6c;
+    background-color: #fef0f0;
+    border-color: #fde2e2;
+  }
+  
+  &.info {
+    color: #909399;
+    background-color: #f4f4f5;
+    border-color: #e9e9eb;
+  }
+}

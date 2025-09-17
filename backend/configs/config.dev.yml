@@ -1,0 +1,60 @@
+# 开发环境配置
+server:
+  host: "0.0.0.0"
+  port: 8080
+  mode: "debug" # debug, release, test
+
+database:
+  host: "localhost"
+  port: 3306
+  username: "root"
+  password: "root123456"
+  dbname: "mall"
+  charset: "utf8mb4"
+  timezone: "Asia/Shanghai"
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+
+elasticsearch:
+  host: "localhost"
+  port: 9200
+  username: ""
+  password: ""
+
+jwt:
+  secret: "mall_jwt_secret_key_2024"
+  expire_hours: 168 # 7天
+
+log:
+  level: "info" # debug, info, warn, error
+  filename: "logs/app.log"
+  max_size: 100 # MB
+  max_age: 30   # days
+  max_backups: 5
+
+upload:
+  path: "uploads/"
+  max_size: 10 # MB
+  allowed_types:
+    - "image/jpeg"
+    - "image/png"
+    - "image/gif"
+
+wechat:
+  app_id: ""
+  app_secret: ""
+  mch_id: ""
+  api_key: ""
+
+alipay:
+  app_id: ""
+  private_key: ""
+  alipay_public_key: ""
