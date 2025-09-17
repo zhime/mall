@@ -55,5 +55,5 @@ require (
 	golang.org/x/text v0.29.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/datatypes v1.3.0 // indirect
+	gorm.io/datatypes v1.2.0 // indirect
 )

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"mall/pkg/cache"
 	"mall/pkg/logger"
 )
 
@@ -103,13 +102,13 @@ func (cm *CacheManager) CacheWithPolicy(key string, value interface{}, policy Ca
 	
 	// 设置缓存
 	ctx := context.Background()
-	return cache.Set(ctx, key, string(jsonData), policy.TTL)
+	return Set(ctx, key, string(jsonData), policy.TTL)
 }
 
 // GetCachedData 获取缓存数据
 func (cm *CacheManager) GetCachedData(key string) (string, error) {
 	ctx := context.Background()
-	return cache.Get(ctx, key)
+	return Get(ctx, key)
 }
 
 // InvalidateCache 使缓存失效
@@ -123,7 +122,7 @@ func (cm *CacheManager) InvalidateCache(pattern string) error {
 	}
 	
 	if len(keys) > 0 {
-		return cache.Del(ctx, keys...)
+		return Del(ctx, keys...)
 	}
 	
 	return nil
@@ -138,7 +137,7 @@ func (cm *CacheManager) InvalidateUserCache(userID uint64) error {
 	}
 	
 	ctx := context.Background()
-	return cache.Del(ctx, keys...)
+	return Del(ctx, keys...)
 }
 
 // InvalidateProductCache 使商品相关缓存失效
@@ -154,7 +153,7 @@ func (cm *CacheManager) InvalidateProductCache(productID uint64) error {
 	}
 	
 	ctx := context.Background()
-	return cache.Del(ctx, keys...)
+	return Del(ctx, keys...)
 }
 
 // RefreshCache 刷新缓存
